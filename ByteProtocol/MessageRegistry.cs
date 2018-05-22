@@ -8,18 +8,20 @@ using System.Threading.Tasks;
 
 namespace ByteProtocol
 {
-    public class MessageRegistry<GenericMessage>  where GenericMessage : Message, new()
+    public class MessageRegistry<GenericRequest, GenericResponse> : IMessageRegistry where GenericRequest : Message, new() where GenericResponse : Message, new()
     {
-        private ByteProtocolBase<GenericMessage> byteProtocolBase;
-        private List<MessageRegistryInfo<GenericMessage>> _messages = new List<MessageRegistryInfo<GenericMessage>>();
+        private ByteProtocolBase<GenericRequest,GenericResponse> byteProtocolBase;
 
-        public MessageRegistry(ByteProtocolBase<GenericMessage> byteProtocolBase)
+        private List<MessageRegistryInfo> _messages = new List<MessageRegistryInfo>();
+
+        public MessageRegistry(ByteProtocolBase<GenericRequest, GenericResponse> byteProtocolBase)
         {
             this.byteProtocolBase = byteProtocolBase;
         }
-        public MessageRegistry<GenericMessage> RegisterEvent<EventPayload>(byte[] number, ByteProtocolBase<GenericMessage>.ByteProtocolEvent<EventPayload> @event, bool requreAck = false) where EventPayload : Payload
+
+        public IMessageRegistry RegisterEvent<EventPayload>(byte[] number, ByteProtocolEvent<EventPayload> @event, bool requreAck = false) where EventPayload : Payload
         {
-            _messages.Add(new MessageRegistryInfo<GenericMessage>(MessageType.Event)
+            _messages.Add(new MessageRegistryInfo(MessageType.Event)
             {
                 MessageNumber = number,
                 RequreAck = requreAck,
@@ -28,26 +30,29 @@ namespace ByteProtocol
             });
             return this;
         }
-        public MessageRegistry<GenericMessage> RegisterEvent<GenericPayload>(byte number, ByteProtocolBase<GenericMessage>.ByteProtocolEvent<GenericPayload> @event, bool requreAck = false) where GenericPayload : Payload =>
+
+        public IMessageRegistry RegisterEvent<GenericPayload>(byte number, ByteProtocolEvent<GenericPayload> @event, bool requreAck = false) where GenericPayload : Payload =>
             RegisterEvent(new byte[1] { number }, @event, requreAck);
-        public MessageRegistry<GenericMessage> RegisterQuery(byte[] number, byte[] responseNumber)
+
+        public IMessageRegistry RegisterQuery(byte[] number, byte[] responseNumber)
         {
-            _messages.Add(new MessageRegistryInfo<GenericMessage>(MessageType.Event)
+            _messages.Add(new MessageRegistryInfo(MessageType.Event)
             {
                 MessageNumber = number,
                 ResponseNumber = responseNumber
             });
             return this;
         }
-        public MessageRegistry<GenericMessage> RegisterQuery(byte number, byte responseNumber) =>
+
+        public IMessageRegistry RegisterQuery(byte number, byte responseNumber) =>
             RegisterQuery(new byte[1] { number }, new byte[1] { responseNumber });
 
-        internal MessageRegistryInfo<GenericMessage> GetMessageInfo(byte[] number)
+        internal MessageRegistryInfo GetMessageInfo(byte[] number)
         {
             return _messages.Where(o => o.MessageNumber.SequenceEqual(number)).FirstOrDefault();
         }
 
-        internal IEnumerable<MessageRegistryInfo<GenericMessage>> GetMessageInfoByResponse(byte[] number) =>
+        internal IEnumerable<MessageRegistryInfo> GetMessageInfoByResponse(byte[] number) =>
              _messages
                 .Where(o => Enumerable.SequenceEqual(o.ResponseNumber, number));
 

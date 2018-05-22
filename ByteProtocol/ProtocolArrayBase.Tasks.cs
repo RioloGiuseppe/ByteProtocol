@@ -11,12 +11,12 @@ using ByteProtocol.Exceptions;
 
 namespace ByteProtocol
 {
-    public abstract partial class ByteProtocolBase<GenericMessage> : IByteProtocolBase where GenericMessage : Message, new()
+    public abstract partial class ByteProtocolBase<GenericRequest, GenericResponse>
     {
         private CancellationTokenSource reconnectCancellationSource;
         private CancellationTokenSource heartbeatCancellationSource;
-        public Func<ByteProtocolBase<GenericMessage>, Task<bool>> connectionChallengeFunction { get; set; }
-        public Func<ByteProtocolBase<GenericMessage>, Task<bool>> heartbeatChallengeFunction { get; set; }
+        public Func<ByteProtocolBase<GenericRequest, GenericResponse>, Task<bool>> connectionChallengeFunction { get; set; }
+        public Func<ByteProtocolBase<GenericRequest, GenericResponse>, Task<bool>> heartbeatChallengeFunction { get; set; }
         public event EventHandler<DateTime> Heartbeat;
         public event EventHandler<DateTime> ConnectionFailure;
         public TimeSpan HeartbeatDelay { get; set; }

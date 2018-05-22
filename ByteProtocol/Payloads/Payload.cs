@@ -72,7 +72,11 @@ namespace ByteProtocol.Payloads
                         _desObj.Key.SetValue(this, data[info.Position]);
                     // // length n (string)
                     if (info.Size.HasValue)
-                        _desObj.Key.SetValue(this, data.SubArray(info.Position, info.Size.Value));
+                    {
+                        if (info.Size.Value == int.MaxValue) _desObj.Key.SetValue(this, data.SubArray(info.Position, data.Length));
+                        else _desObj.Key.SetValue(this, data.SubArray(info.Position, info.Size.Value));
+                    }
+
                     // length 0 (aggregated bit)
                     if (info.Match.HasValue)
                     {
@@ -129,10 +133,10 @@ namespace ByteProtocol.Payloads
             return b.ToArray();
         }
 
-        protected string __string(byte[] str, int size)
+        protected string __string(byte[] str, int size = int.MaxValue)
         {
             var b = Encoding.ASCII.GetString(str);
-            if (b.Length > size)
+            if (b.Length > size && size < int.MaxValue)
                 throw new SerializationException(size, b.Length);
             return b.Replace("\0", string.Empty);
         }

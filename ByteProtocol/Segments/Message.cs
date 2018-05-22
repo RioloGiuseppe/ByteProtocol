@@ -15,17 +15,33 @@ namespace ByteProtocol.Segments
         byte[] Head { get; set; }
         byte[] Number { get; set; }
         byte[] Data { get; set; }
+        byte ChecksumLength { get; }
     }
 
     public abstract class Message : IMessage
     {
+        public Message()
+        {
+            foreach (var p in GetType()
+                .GetProperties(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                .Where(o => o.PropertyType == typeof(Byte[])))
+                p.SetValue(this, new byte[0]);
+        }
+
         public abstract byte[] Head { get; set; }
+
         public abstract byte[] Number { get; set; }
         [SegmentInfo(0, 1, true)]
+
         internal protected byte Length { get; set; }
+
         public abstract byte[] Data { get; set; }
-        [Checksum(2)]
+
+        [Checksum()]
         internal byte[] Checksum { get; set; }
+
+        public abstract byte ChecksumLength { get; }
+
         internal Dictionary<PropertyInfo, SegmentAttribute> GetPropertyInfo()
         {
             Dictionary<PropertyInfo, SegmentAttribute> _serializationData = new Dictionary<PropertyInfo, SegmentAttribute>();
@@ -42,6 +58,7 @@ namespace ByteProtocol.Segments
             _serializationData = _serializationData.OrderBy(o => o.Value.Position).ToDictionary(o => o.Key, o => o.Value);
             return _serializationData;
         }
+
         internal byte[] ToBytes()
         {
             OnPreSerilize();
@@ -77,10 +94,6 @@ namespace ByteProtocol.Segments
         protected virtual void OnPreSerilize() { }
 
         protected virtual void OnPostSerialize() { }
-
-        protected virtual void OnPreDeserialize() { }
-
-        protected virtual void OnPostDeserialize() { }
 
         #endregion
     }

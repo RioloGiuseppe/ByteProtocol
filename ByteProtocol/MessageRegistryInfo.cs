@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ByteProtocol
 {
-    internal class MessageRegistryInfo<GenericMessage> where GenericMessage : Message, new()
+    internal class MessageRegistryInfo
     {
         public MessageRegistryInfo(MessageType type)
         {
@@ -25,7 +25,7 @@ namespace ByteProtocol
         #region Events
         public bool RequreAck { get; set; }
         public Type EventType { get; set; }
-        public ByteProtocolBase<GenericMessage>.ByteProtocolEvent<Payload> Event { get; set; }
+        public ByteProtocolEvent<Payload> Event { get; set; }
         #endregion
     }
 }

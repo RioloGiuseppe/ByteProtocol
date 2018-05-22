@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace ByteProtocol
 {
-    public abstract partial class ByteProtocolBase<GenericMessage>
+    public abstract partial class ByteProtocolBase<GenericRequest, GenericResponse>
     {
         private ConcurrentDictionary<Guid, RequestTaskInfo> _lockedTasks = new ConcurrentDictionary<Guid, RequestTaskInfo>();
 
@@ -22,7 +22,7 @@ namespace ByteProtocol
 
             return Task<RequestPayload>.Factory.StartNew(() =>
             {
-                var message = new GenericMessage();
+                var message = new GenericRequest();
                 message.Data = inputdata.Serialize();
                 message.Number = request;
                 message.Length = (byte)(message.Data.Length + message.Number.Length);
@@ -47,7 +47,7 @@ namespace ByteProtocol
             {
                 try
                 {
-                    var message = new GenericMessage();
+                    var message = new GenericRequest();
                     message.Data = inputdata.Serialize();
                     message.Number = command;
                     message.Length = ComputeLength(message);
@@ -60,8 +60,10 @@ namespace ByteProtocol
                 }
             });
         }
-        protected abstract byte ComputeLength(GenericMessage message);
-        internal void ManageReceivedMessage(GenericMessage e)
+
+        protected abstract byte ComputeLength(GenericRequest message);
+
+        internal void ManageReceivedMessage(GenericResponse e)
         {
             var messageinfo = Registry.GetMessageInfo(e?.Number);
             if (messageinfo?.Type == Segments.MessageType.Event)

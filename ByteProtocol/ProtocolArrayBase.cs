@@ -10,31 +10,40 @@ using ByteProtocol.Payloads;
 
 namespace ByteProtocol
 {
-    public abstract partial class ByteProtocolBase<GenericMessage> : IByteProtocolBase where GenericMessage : Message, new()
+    public delegate void ByteProtocolEvent<in EventPayload>(IByteProtocolBase sender, EventPayload obj) where EventPayload : Payload;
+    public abstract partial class ByteProtocolBase<GenericRequest, GenericResponse> : IByteProtocolBase where GenericRequest : Message, new() where GenericResponse : Message, new()
     {
         public bool CanMessageModifyHead { get; set; } = false;
-        private MessageMaker<GenericMessage> _messageMaker;
-        public delegate void ByteProtocolEvent<in EventPayload>(ByteProtocolBase<GenericMessage> sender, EventPayload obj) where EventPayload : Payload;
+        private MessageMaker<GenericResponse> _messageMaker;
 
 
         private byte[] DefaultHead = new byte[0];
+
         protected abstract byte[] Checksum(byte[] data);
+
         protected abstract byte[] Stuffing(byte[] data);
+
         protected abstract byte MessageStart { get; }
+
         protected abstract byte? MessageStop { get; }
+
         protected abstract byte[] Unstuffing(byte[] data);
+
         protected virtual void OnInit() { }
+
         protected virtual byte[] ModifyHead(byte[] head) => new byte[0];
+
         private int _timeout;
+
         public int Timeout { get => _timeout < 200 ? 200 : _timeout; set => _timeout = value; }
 
 
         #region Constructors
         public ByteProtocolBase()
         {
-            _registry = new MessageRegistry<GenericMessage>(this);
+            _registry = new MessageRegistry<GenericRequest, GenericResponse>(this);
             OnInit();
-            _messageMaker = new MessageMaker<GenericMessage>(MessageStart, MessageStop, Unstuffing, Checksum);
+            _messageMaker = new MessageMaker<GenericResponse>(MessageStart, MessageStop, Unstuffing, Checksum);
             _messageMaker.MessageArrived += ManageReceivedMessage;
         }
 
@@ -65,7 +74,7 @@ namespace ByteProtocol
 
         #region Protocol
 
-        private byte[] ComputeBaseMessage(GenericMessage s)
+        private byte[] ComputeBaseMessage(GenericRequest s)
         {
             List<byte> message = new List<byte>();
             List<byte> innerMessage = new List<byte>();
@@ -80,7 +89,7 @@ namespace ByteProtocol
             if (MessageStop.HasValue) message.Add(MessageStop.Value);
             return message.ToArray();
         }
-        private void SendSegment(GenericMessage c)
+        private void SendSegment(GenericRequest c)
         {
             var m = ComputeBaseMessage(c);
 
@@ -95,7 +104,7 @@ namespace ByteProtocol
             ProtocolStream?.Stream.Write(m, 0, m.Length);
             ProtocolStream?.Stream.Flush();
         }
-        private Task SendSegmentAsync(GenericMessage c)
+        private Task SendSegmentAsync(GenericRequest c)
         {
             return Task.Factory.StartNew(() =>
              {
@@ -141,11 +150,12 @@ namespace ByteProtocol
 
         #endregion
 
+        //::TODO
         #region Message Register
 
-        private readonly MessageRegistry<GenericMessage> _registry;
-        internal MessageRegistry<GenericMessage> Registry => _registry;
-        protected abstract void RegisterMessages(MessageRegistry<GenericMessage> registry);
+        private readonly MessageRegistry<GenericRequest, GenericResponse> _registry;
+        internal MessageRegistry<GenericRequest, GenericResponse> Registry => _registry;
+        protected abstract void RegisterMessages(IMessageRegistry registry);
 
         #endregion
 

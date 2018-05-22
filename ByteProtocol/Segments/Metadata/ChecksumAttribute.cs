@@ -8,10 +8,10 @@ namespace ByteProtocol.Segments.Metadata
 {
     public class ChecksumAttribute : SegmentAttribute
     {
-        public ChecksumAttribute(int len)
+        public ChecksumAttribute()
         {
             Position = int.MaxValue;
-            Length = Convert.ToByte(len);
+            Length = 0;
         }
     }
 }

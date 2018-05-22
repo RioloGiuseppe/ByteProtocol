@@ -12,11 +12,17 @@ namespace ByteProtocol
     internal class MessageMaker<T> where T : Message, new()
     {
         private BlockingCollection<byte> _inputBuffer = new BlockingCollection<byte>();
+
         private CancellationTokenSource _messageCreatorCancellationSource = new CancellationTokenSource();
+
         private CancellationToken _messageCreatorCancellationToken;
+
         private byte _start;
+
         private byte? _stop;
+
         private Func<byte[], byte[]> _unstuffData;
+
         private Func<byte[], byte[]> _checksum;
 
         internal event Action<T> MessageArrived;
@@ -59,9 +65,13 @@ namespace ByteProtocol
                         byte len = 0;
                         _.Clear();
                         if (prop.Value.GetType() == typeof(SegmentInfoAttribute))
-                            len = (_isSetLen && message.Length == 0 && prop.Value.IncludeInLength) ? (byte)0 : Convert.ToByte(prop.Value.Length);
+                        {
+                            if (_isSetLen && message.Length == 0) len = 0;
+                            else if (_isSetLen && message.Length == byte.MaxValue) len = message.Length;
+                            else len = Convert.ToByte(prop.Value.Length);
+                        }
                         if (prop.Value.GetType() == typeof(ChecksumAttribute))
-                            len = Convert.ToByte(prop.Value.Length);
+                            len = Convert.ToByte(message.ChecksumLength);
                         if (prop.Value.GetType() == typeof(PayloadAttribute))
                             len = message.PayloadLength();
                         while (_unstuffData(_.ToArray()).Length < len)
