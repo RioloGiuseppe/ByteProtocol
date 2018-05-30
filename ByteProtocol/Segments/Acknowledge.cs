@@ -8,6 +8,6 @@ namespace ByteProtocol.Segments
 {
     public abstract class Acknowledge : Message
     {
-        public override byte[] Data { get => new byte[0]; set { } }
+        public override byte[] Data { get => new byte[0];  set { } }
     }
 }

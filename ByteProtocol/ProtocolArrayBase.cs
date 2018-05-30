@@ -14,8 +14,8 @@ namespace ByteProtocol
     public abstract partial class ByteProtocolBase<GenericRequest, GenericResponse> : IByteProtocolBase where GenericRequest : Message, new() where GenericResponse : Message, new()
     {
         public bool CanMessageModifyHead { get; set; } = false;
-        private MessageMaker<GenericResponse> _messageMaker;
 
+        private MessageMaker<GenericResponse> _messageMaker;
 
         private byte[] DefaultHead = new byte[0];
 
@@ -29,7 +29,7 @@ namespace ByteProtocol
 
         protected abstract byte[] Unstuffing(byte[] data);
 
-        protected virtual void OnInit() { }
+        protected virtual void OnInitialized() { }
 
         protected virtual byte[] ModifyHead(byte[] head) => new byte[0];
 
@@ -39,12 +39,13 @@ namespace ByteProtocol
 
 
         #region Constructors
+
         public ByteProtocolBase()
         {
-            _registry = new MessageRegistry<GenericRequest, GenericResponse>(this);
-            OnInit();
+            _registry = new MessageRegistry<GenericRequest, GenericResponse>();
             _messageMaker = new MessageMaker<GenericResponse>(MessageStart, MessageStop, Unstuffing, Checksum);
             _messageMaker.MessageArrived += ManageReceivedMessage;
+            OnInitialized();
         }
 
         public ByteProtocolBase(byte[] head) : this()
@@ -118,10 +119,6 @@ namespace ByteProtocol
 
         #region Stream
 
-        private CancellationTokenSource _listenerCancellationToken = new CancellationTokenSource();
-
-        private CancellationToken _cancellationToken;
-
         public IByteProtocolStream ProtocolStream { get; set; }
 
         public async Task Connect()
@@ -133,9 +130,10 @@ namespace ByteProtocol
 
         private void startListener()
         {
-            Task.Factory.StartNew(async () =>
+            listenerCancellationSource = new CancellationTokenSource();
+            var a = Task.Factory.StartNew(async () =>
             {
-                while (!_cancellationToken.IsCancellationRequested)
+                while (!listenerCancellationSource.IsCancellationRequested)
                 {
                     int read;
                     var buf = new byte[1];
@@ -145,12 +143,11 @@ namespace ByteProtocol
                     }
                     await Task.Delay(ProtocolStream.ReadingPollingTime);
                 }
-            }, _listenerCancellationToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            }, listenerCancellationSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         #endregion
 
-        //::TODO
         #region Message Register
 
         private readonly MessageRegistry<GenericRequest, GenericResponse> _registry;
@@ -177,7 +174,7 @@ namespace ByteProtocol
                 {
                     _messageMaker.MessageArrived -= ManageReceivedMessage;
                     _messageMaker.Dispose();
-                    _listenerCancellationToken.Cancel();
+                    reconnectCancellationSource.Cancel();
                 }
                 _disposed = true;
             }

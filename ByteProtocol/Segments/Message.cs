@@ -10,14 +10,6 @@ using System.Threading.Tasks;
 
 namespace ByteProtocol.Segments
 {
-    public interface IMessage
-    {
-        byte[] Head { get; set; }
-        byte[] Number { get; set; }
-        byte[] Data { get; set; }
-        byte ChecksumLength { get; }
-    }
-
     public abstract class Message : IMessage
     {
         public Message()
@@ -31,6 +23,7 @@ namespace ByteProtocol.Segments
         public abstract byte[] Head { get; set; }
 
         public abstract byte[] Number { get; set; }
+
         [SegmentInfo(0, 1, true)]
 
         internal protected byte Length { get; set; }

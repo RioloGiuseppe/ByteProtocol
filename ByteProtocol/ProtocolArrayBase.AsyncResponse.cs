@@ -17,6 +17,7 @@ namespace ByteProtocol
         {
             var locker = new AutoResetEvent(false);
             var guid = Guid.NewGuid();
+
             var adata = new RequestTaskInfo(request, locker);
             _lockedTasks.TryAdd(guid, adata);
 
@@ -31,11 +32,13 @@ namespace ByteProtocol
                 {
                     _lockedTasks.TryRemove(guid, out adata);
                     var ret = new RequestPayload();
-                    ret.Deserialize(adata.Data);
+                    ret.Message = adata.Message;
+                    ret.Deserialize(adata.Message.Data);
                     return ret;
                 }
                 else
                 {
+                    _lockedTasks.TryRemove(guid, out adata);
                     throw new ByteProtocol.Exceptions.TimeoutException();
                 }
             });
@@ -54,7 +57,7 @@ namespace ByteProtocol
                     SendSegment(message);
                     return true;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     return false;
                 }
@@ -70,6 +73,7 @@ namespace ByteProtocol
             {
                 if (messageinfo.RequreAck) SendAck();
                 var payload = Activator.CreateInstance(messageinfo.EventType) as Payload;
+                payload.Message = e;                                                        // ok
                 payload.Deserialize(e.Data);
                 messageinfo.Event?.Invoke(this, payload);
                 return;
@@ -83,7 +87,7 @@ namespace ByteProtocol
                     .FirstOrDefault();
                 if (kv != null)
                 {
-                    kv.Data = e.Data;
+                    kv.Message = e;
                     kv.Are.Set();
                 }
                 return;

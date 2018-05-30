@@ -1,4 +1,5 @@
 ﻿using ByteProtocol.Exceptions;
+using ByteProtocol.Segments; 
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,9 +11,11 @@ namespace ByteProtocol.Payloads
 {
     public abstract class Payload
     {
+        protected internal Message Message { internal set; get; }
+
         public Payload() : base() { }
 
-        public Payload(byte[] data, bool IsAscii = false)
+        public Payload(byte[] data)
         {
             FromBinary(data);
         }

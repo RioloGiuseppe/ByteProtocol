@@ -13,17 +13,25 @@ namespace ByteProtocol.ProtocolStream
     public class ByteProtocolTcpsStream : IByteProtocolStream
     {
         private TcpClient _tcp;
+
         public string Hostname { get; private set; }
+
         public int Port { get; private set; }
+
         public TimeSpan ReadingPollingTime { get; private set; }
+
         public System.IO.Stream Stream { get; private set; }
+
         public string MachineName { get; set; }
+
         public string ServerName { get; set; }
+
         public ByteProtocolTcpsStream(string hostname, int port)
         {
             Hostname = hostname;
             Port = port;
         }
+
         public async Task<bool> Connect()
         {
             if (_tcp == null)
@@ -42,16 +50,16 @@ namespace ByteProtocol.ProtocolStream
                 return false;
             }
         }
-        public async Task<bool> Disconnect()
+
+        public bool Disconnect()
         {
             try
             {
                 if (_tcp.Connected)
-                    await Disconnect();
-                Stream.Flush();
-                Stream.Close();
-                Stream.Dispose();
-                Stream = null;
+                {
+                    try { _tcp.Close(); _tcp = null; }
+                    catch (Exception) { }
+                }
                 return true;
             }
             catch (Exception)
@@ -59,15 +67,18 @@ namespace ByteProtocol.ProtocolStream
                 return false;
             }
         }
+
         public async Task<bool> Reconnect()
         {
-            await Disconnect();
+            Disconnect();
             return await Connect();
         }
+
         public void Dispose()
         {
-            Disconnect().Wait();
+            Disconnect();
         }
+
         private SslStream CreateSecureStream(string machineName, string serverName)
         {
             SslStream sslStream = new SslStream(_tcp.GetStream(), false, (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>

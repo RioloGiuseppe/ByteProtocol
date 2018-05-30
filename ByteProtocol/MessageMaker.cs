@@ -100,10 +100,8 @@ namespace ByteProtocol
                     Console.WriteLine();
                     Console.ForegroundColor = ConsoleColor.Gray;
 #endif
-                    if (verifyChecksum(message))
-                        MessageArrived?.Invoke(message);
-                    if (_stop.HasValue)
-                        while (_inputBuffer.Take() != _stop.Value) ;
+                    if (verifyChecksum(message)) MessageArrived?.Invoke(message);
+                    if (_stop.HasValue) while (_inputBuffer.Take() != _stop.Value) ;
                 }
             }, _messageCreatorCancellationSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }

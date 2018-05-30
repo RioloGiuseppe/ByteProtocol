@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ByteProtocol.Segments;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,8 +10,6 @@ namespace ByteProtocol
 {
     internal class RequestTaskInfo
     {
-        //private byte _message;
-
         public RequestTaskInfo(byte[] number, AutoResetEvent are)
         {
             Number = number;
@@ -22,7 +21,7 @@ namespace ByteProtocol
 
         public byte[] Number { get; set; }
 
-        public byte[] Data { get; set; } = null;
+        public Message Message { get; set; } = null;
 
         public DateTime Timestamp { get; private set; }
 

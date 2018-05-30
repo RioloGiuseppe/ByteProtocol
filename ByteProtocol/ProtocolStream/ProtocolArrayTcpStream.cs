@@ -37,16 +37,15 @@ namespace ByteProtocol.ProtocolStream
                 return false;
             }
         }
-        public async Task<bool> Disconnect()
+        public bool Disconnect()
         {
             try
             {
                 if (_tcp.Connected)
-                    await Disconnect();
-                Stream.Flush();
-                Stream.Close();
-                Stream.Dispose();
-                Stream = null;
+                {
+                    try { _tcp.Close(); _tcp = null; }
+                    catch (Exception) { }
+                }
                 return true;
             }
             catch (Exception)
@@ -56,12 +55,12 @@ namespace ByteProtocol.ProtocolStream
         }
         public async Task<bool> Reconnect()
         {
-            await Disconnect();
+            Disconnect();
             return await Connect();
         }
         public void Dispose()
         {
-            Disconnect().Wait();
+            Disconnect();
         }
     }
 }

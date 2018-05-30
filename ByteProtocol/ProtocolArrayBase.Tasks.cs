@@ -14,12 +14,23 @@ namespace ByteProtocol
     public abstract partial class ByteProtocolBase<GenericRequest, GenericResponse>
     {
         private CancellationTokenSource reconnectCancellationSource;
+
         private CancellationTokenSource heartbeatCancellationSource;
-        public Func<ByteProtocolBase<GenericRequest, GenericResponse>, Task<bool>> connectionChallengeFunction { get; set; }
-        public Func<ByteProtocolBase<GenericRequest, GenericResponse>, Task<bool>> heartbeatChallengeFunction { get; set; }
+
+        private CancellationTokenSource listenerCancellationSource;
+
+        public Func<ByteProtocolBase<GenericRequest, GenericResponse>, Task<bool>> ConnectionChallengeFunction { get; set; }
+
+        public Func<ByteProtocolBase<GenericRequest, GenericResponse>, Task<bool>> HeartbeatChallengeFunction { get; set; }
+        
         public event EventHandler<DateTime> Heartbeat;
+        
         public event EventHandler<DateTime> ConnectionFailure;
+
         public TimeSpan HeartbeatDelay { get; set; }
+
+        public TimeSpan ConnectionDelay { get; set; }
+
         public Task StartReconnection()
         {
             reconnectCancellationSource = new CancellationTokenSource();
@@ -30,14 +41,16 @@ namespace ByteProtocol
                 {
                     if (reconnectCancellationSource.Token.IsCancellationRequested)
                         reconnectCancellationSource.Token.ThrowIfCancellationRequested();
-                    if (connectionChallengeFunction == null)
+                    if (ConnectionChallengeFunction == null)
                         throw new ConfigurationException("Unsetted challenge function for reconnection.");
-                    if (!await connectionChallengeFunction(this))
+                    if (!await ConnectionChallengeFunction(this))
                     {
+                        StoptListener();
                         ConnectionFailure?.Invoke(this, DateTime.UtcNow);
                         await ProtocolStream.Reconnect();
+                        startListener();
                     }
-                    await Task.Delay(new TimeSpan(0, 1, 0));
+                    await Task.Delay(ConnectionDelay);
                 }
             }, reconnectCancellationSource.Token);
         }
@@ -54,6 +67,18 @@ namespace ByteProtocol
             }
         }
 
+        public void StoptListener()
+        {
+            if (listenerCancellationSource != null)
+            {
+                try
+                {
+                    listenerCancellationSource.Cancel();
+                }
+                catch (Exception) { }
+            }
+        }
+
         public Task StartHeartbeat()
         {
             heartbeatCancellationSource = new CancellationTokenSource();
@@ -62,9 +87,9 @@ namespace ByteProtocol
                 heartbeatCancellationSource.Token.ThrowIfCancellationRequested();
                 while (true)
                 {
-                    if (heartbeatChallengeFunction == null)
+                    if (HeartbeatChallengeFunction == null)
                         throw new ConfigurationException("Unsetted challenge function for heartbeat.");
-                    if (await heartbeatChallengeFunction.Invoke(this))
+                    if (await HeartbeatChallengeFunction.Invoke(this))
                         Heartbeat?.Invoke(this, DateTime.UtcNow);
                     await Task.Delay(HeartbeatDelay);
                     if (heartbeatCancellationSource.Token.IsCancellationRequested)

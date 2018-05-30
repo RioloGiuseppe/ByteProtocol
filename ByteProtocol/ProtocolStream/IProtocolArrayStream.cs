@@ -12,7 +12,7 @@ namespace ByteProtocol.ProtocolStream
         TimeSpan ReadingPollingTime { get; }
         System.IO.Stream Stream { get; }
         Task<bool> Connect();
-        Task<bool> Disconnect();
+        bool Disconnect();
         Task<bool> Reconnect();
     }
 }
